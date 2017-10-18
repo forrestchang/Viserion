@@ -16,7 +16,11 @@ class Request(object):
                 self._query_dict = v
 
         # post data
-        self._post_data = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ, keep_blank_values=True)
+        self._post_data = cgi.FieldStorage(
+            fp=environ['wsgi.input'],
+            environ=environ,
+            keep_blank_values=True
+        )
 
         # cookie
         self._cookies = {}

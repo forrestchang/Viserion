@@ -4,7 +4,7 @@ import os
 import re
 import threading
 
-from .exceptions import error
+from .exception import error
 from .request import Request
 from .response import Response
 
