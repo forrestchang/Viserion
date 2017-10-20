@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # Author: Forrest Chang (forrestchang7@gmail.com)
-import threading
-
 import re
+import threading
 
 from viserion.context import Context
 from viserion.descriptors import CachedProperty
