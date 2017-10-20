@@ -90,3 +90,24 @@ class Viserion:
                 raise RouteError('Route {} repeat defining'.format(path))
             self.route_processors.append((pattern, methods, func))
         return _decoractor
+
+    def get(self, path):
+        return self.route(path, methods=['GET'])
+
+    def post(self, path):
+        return self.route(path, methods='POST')
+
+    def put(self, path):
+        return self.route(path, methods=['PUT'])
+
+    def patch(self, path):
+        return self.route(path, methods=['PATCH'])
+
+    def delete(self, path):
+        return self.route(path, methods=['DELETE'])
+
+    def option(self, path):
+        return self.route(path, methods=['OPTION'])
+
+    def head(self, path):
+        return self.route(path, methods=['HEAD'])
