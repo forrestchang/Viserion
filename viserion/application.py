@@ -81,7 +81,7 @@ class Viserion:
     def route(self, path, methods=None):
         if methods is None:
             methods = ['GET']
-        def _decoractor(func):
+        def _decorator(func):
             pattern = re.compile(
                 re.sub(r':(?P<params>[a-z_]+)',
                        lambda m: '(?P<{}>[a-z0-9-]+)'.format(m.group('params')), path).rstrip('/') + '/$'
@@ -89,7 +89,7 @@ class Viserion:
             if pattern in map(lambda i: i[0], self.route_processors):
                 raise RouteError('Route {} repeat defining'.format(path))
             self.route_processors.append((pattern, methods, func))
-        return _decoractor
+        return _decorator
 
     def get(self, path):
         return self.route(path, methods=['GET'])
@@ -111,3 +111,9 @@ class Viserion:
 
     def head(self, path):
         return self.route(path, methods=['HEAD'])
+
+    def listen(self, port):
+        from wsgiref.simple_server import make_server
+        server = make_server('localhost', port, self)
+        print('Serving on 127.0.0.1:{port}'.format(port=port))
+        server.serve_forever()
