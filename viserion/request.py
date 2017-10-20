@@ -3,53 +3,36 @@
 import cgi
 from urllib.parse import parse_qs
 
+import os
 
-class Request(object):
 
-    def __init__(self, environ):
-        self._query_dict = {}
-        query_dict = parse_qs(environ['QUERY_STRING'], keep_blank_values=True)
-        for k, v in query_dict.iteritems():
-            if len(v) == 1:
-                self._query_dict = v[0]
-            else:
-                self._query_dict = v
+class File:
 
-        # post data
-        self._post_data = cgi.FieldStorage(
-            fp=environ['wsgi.input'],
-            environ=environ,
-            keep_blank_values=True
-        )
+    def __init__(self, file, name, filename):
+        self.file = file
+        self.name = name
+        self.filename = filename
 
-        # cookie
-        self._cookies = {}
-        cookie_str = environ.get('HTTP_COOKIE')
-        if cookie_str:
-            cookie_dict = parse_qs(cookie_str, keep_blank_values=True)
-            self._cookies = {k.strip(): v[0] for k, v in cookie_dict.iteritems()}
+    def _copy_file(self, fp, chunk_size=2**16):
+        buffer = self.file.read(chunk_size)
+        while buffer:
+            fp.write(buffer)
+            buffer = self.file.read(chunk_size)
+        self.file.seek(self.file.tell())
 
-        # save the original environment
-            self._environ = environ
+    def save(self, destination, overwrite=False, chunk_size=2**16):
+        if isinstance(destination, str):
+            if os.path.isdir(destination):
+                destination = os.path.join(destination, self.filename)
+            if not overwrite and os.path.exists(destination):
+                raise IOError('File exists.')
+            with open(destination, 'wb') as fp:
+                self._copy_file(fp, chunk_size)
+        else:
+            self._copy_file(destination, chunk_size)
 
-    @property
-    def method(self):
-        return self._environ['REQUEST_METHOD']
+    def __str__(self):
+        return '<File {}>'.format(self.filename)
 
-    @property
-    def path_info(self):
-        return self._environ['PATH_INFO']
-
-    def query(self, key):
-        return self._query_dict.get(key, '')
-
-    def post(self, key):
-        return self._post_data.getvalue(key, '')
-
-    def file(self, key):
-        if key in self._post_data and self._post_data[key].filename:
-            return self._post_data[key]
-        return None
-
-    def get_cookie(self, name):
-        return self._cookies.get(name)
+    def __repr__(self):
+        return '<File {}>'.format(self.filename)
