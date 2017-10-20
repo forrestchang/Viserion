@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Author: Forrest Chang (forrestchang7@gmail.com)
 import cgi
+import json
 import os
 from urllib.parse import parse_qsl
 
@@ -137,3 +138,26 @@ class Request:
             else:
                 post[item.name] = item.value
         return post
+
+    @DictProperty('storage', read_only=True)
+    def files(self):
+        files = {}
+        for name, item in self.post.items():
+            if isinstance(item, File):
+                files[name] = item
+        return files
+
+    @DictProperty('storage', read_only=True)
+    def forms(self):
+        forms = {}
+        for name, item in self.post.items():
+            if not isinstance(item, File):
+                forms[name] = item
+        return forms
+
+    @DictProperty('storage', read_only=True)
+    def json(self):
+        result = {}
+        if self.content_type == 'application/json':
+            result = json.loads(self.body)
+        return result
