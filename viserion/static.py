@@ -3,7 +3,7 @@
 import mimetypes
 import os
 
-from .virserion import ctx
+from .application import ctx
 
 
 def _static_file_generator(path):

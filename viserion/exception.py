@@ -7,7 +7,7 @@ class ViException(Exception):
     pass
 
 
-class RouteException(ViException):
+class RouteError(ViException):
     pass
 
 
