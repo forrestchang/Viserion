@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # Author: Forrest Chang (forrestchang7@gmail.com)
 import cgi
-from urllib.parse import parse_qs
-
 import os
+from urllib.parse import parse_qsl
+
+from viserion.descriptors import DictProperty, HeaderDict
 
 
 class File:
@@ -36,3 +37,103 @@ class File:
 
     def __repr__(self):
         return '<File {}>'.format(self.filename)
+
+
+class Request:
+
+    def __init__(self, environ):
+        self.environ = environ
+        self.storage = {}
+
+    @DictProperty('storage', read_only=True)
+    def path(self):
+        return self.environ.get('PATH_INFO', '').rstrip('/') + '/'
+
+    @DictProperty('storage', read_only=True)
+    def protocol(self):
+        return self.environ.get('SERVER_PROTOCOL')
+
+    @DictProperty('storage', read_only=True)
+    def method(self):
+        return self.environ.get('REQUEST_METHOD', 'GET').upper()
+
+    @DictProperty('storage', read_only=True)
+    def headers(self):
+        result = HeaderDict()
+        for key in self.environ:
+            if key[:5] == 'HTTP_':
+                result[key[5:].title().replace('_', '-')] = self.environ[key]
+            elif key in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
+                result[key.title().replace('_', '-')] = self.environ[key]
+        return result
+
+    @DictProperty('storage', read_only=True)
+    def ip(self):
+        return self.environ.get('REMOTE_ADDR')
+
+    @DictProperty('storage', read_only=True)
+    def hostname(self):
+        return self.environ.get('REMOTE_HOST')
+
+    @DictProperty('storage', read_only=True)
+    def host(self):
+        return self.environ.get('HTTP_HOST')
+
+    @DictProperty('storage', read_only=True)
+    def query_string(self):
+        return self.environ.get('QUERY_STRING')
+
+    @DictProperty('storage', read_only=True)
+    def query(self):
+        query = {}
+        for elem in self.query_string.split('&'):
+            key, value = elem.split('=')
+            query[key] = value
+        return query
+
+    @DictProperty('storage', read_only=True)
+    def body(self):
+        content_length = int(self.environ.get('CONTENT_LENGTH', 0))
+        return self.environ['wsgi.input'].read(content_length).decode('utf-8')
+
+    @DictProperty('storage', read_only=True)
+    def content_type(self):
+        return self.environ.get('CONTENT_TYPE', '').lower()
+
+    @DictProperty('storage', read_only=True)
+    def content_length(self):
+        return int(self.environ.get('CONTENT_LENGTH', -1))
+
+    @DictProperty('storage', read_only=True)
+    def post(self):
+        post = {}
+
+        if self.content_type == 'application/json':
+            return self.json
+
+        if not self.content_type.startswith('multipart/'):
+            pairs = parse_qsl(self.body)
+            for key, value in pairs:
+                post[key] = value
+            return post
+
+        safe_env = {'QUERY_STRING': ''}
+        for key in ('REQUEST_METHOD', 'CONTENT_TYPE', 'CONTENT_LENGTH'):
+            if key in self.environ:
+                safe_env[key] = self.environ[key]
+        data = cgi.FieldStorage(
+            fp=self.environ['wsgi.input'],
+            environ=safe_env,
+            keep_blank_values=True
+        )
+        data = data.list or []
+        for item in data:
+            if item.filename:
+                post[item.name] = File(
+                    item.file,
+                    item.name,
+                    item.filename
+                )
+            else:
+                post[item.name] = item.value
+        return post
