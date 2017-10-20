@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Author: Forrest Chang (forrestchang7@gmail.com)
+import json
 
+from viserion.descriptors import HeaderDict
 
 _RESPONSE_STATUES = {
     "100": "Continue",
@@ -61,43 +63,47 @@ _RESPONSE_STATUES = {
     "550": "Permission denied"
 }
 
-class Response(object):
+class Response:
 
     def __init__(self):
-        self._status = '200 OK'
-        self._headers = {'CONTENT-TYPE': 'text/html; charset=utf-8'}
+        self.status = 200
+        self.headers = HeaderDict()
+        self.body = None
+
+    def __repr__(self):
+        return '<Response {}>'.format(self.status)
 
     @property
-    def status(self):
-        return self._status
-
-    @status.setter
-    def status(self, value):
-        status = _RESPONSE_STATUES.get(value, '')
-        self._status = '%d %s' % (value, status)
+    def status_detail(self):
+        return _RESPONSE_STATUES.get(str(self.status))
 
     @property
-    def headers(self):
+    def status_result(self):
+        return str(self.status) + ' ' + self.status_detail
+
+    @property
+    def headers_result(self):
         """
         [(key1, value1), (key2, value2), ...]
         :return: list of tuples
         """
-        L = [(k, v) for k, v in self._headers.iteritems()]
-        if hasattr(self, '_cookies'):
-            for v in self._cookies.itervalues():
-                L.append(('Set-Cookie', v))
-        return L
+        return [(key, val) for key, val in self.headers.items()]
 
-    def header(self, name, value=None):
-        if value:
-            self._headers[name] = value
-        else:
-            return self._headers[name]
-
-    def set_cookie(self, name, value, max_age=None):
-        if not hasattr(self, '_cookies'):
-            self._cookies = {}
-        L = ['%s=%s' % (name, value)]
-        if isinstance(max_age, int):
-            L.append('Max-Age=%d' % max_age)
-        self._cookies = '; '.join(L)
+    @property
+    def body_result(self):
+        if self.body is None:
+            self.headers['Content-Length'] = 0
+            return ''
+        if isinstance(self.body, int):
+            self.headers['Content-Length'] = 'text/html'
+            return str(self.body)
+        if isinstance(self.body, str):
+            self.headers['Content-Length'] = 'text/html'
+            return self.body
+        if isinstance(self.body, dict):
+            self.headers['Content-Length'] = 'text/json'
+            return json.dumps(self.body)
+        if isinstance(self.body, bytes):
+            self.headers['Content-Length'] = 'application/octet-stream'
+            return self.body
+        return str(self.body)
