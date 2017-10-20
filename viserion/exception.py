@@ -1,18 +1,19 @@
 # -*- coding: utf-8 -*-
 # Author: Forrest Chang (forrestchang7@gmail.com)
 
-from .response import _RESPONSE_STATUES
-from .virserion import ctx
+
+class ViException(Exception):
+    """Super class of all Viserion exceptions."""
+    pass
 
 
-def error(code):
-    status = '%d %s' % (code, _RESPONSE_STATUES[code])
-    ctx.response.status = status
-    template = '<html><body><h1>{}</h1></body></html>'
-    return template.format(status)
+class RouteException(ViException):
+    pass
 
 
-def redirect(code, location):
-    error(code)
-    ctx.response.header('Location', location)
-    return ''
+class HTTPError(ViException):
+    pass
+
+
+def abort(status_code):
+    raise HTTPError(status_code)
